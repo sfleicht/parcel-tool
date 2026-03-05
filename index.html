@@ -348,13 +348,12 @@
     </div>
 
     <script>
-      
-// ===== SUPABASE CONFIGURATION =====
-const SUPABASE_URL = 'https://ofqrtpkpbdloigrfogfa.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_u5I2lqipSLh866Vh_GnQ3g_V6vtKZHD';
+        // ===== SUPABASE CONFIGURATION =====
+        const SUPABASE_URL = 'https://ofqrtpkpbdloigrfogfa.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_u5I2lqipSLh866Vh_GnQ3g_V6vtKZHD';
 
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentUser = null;
         let userParcels = [];
@@ -375,59 +374,60 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         ownerInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
         apnInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
 
-async function handleLogin() {
-    const ownerName = ownerInput.value.trim();
-    const apn = apnInput.value.trim();
+        async function handleLogin() {
+            const ownerName = ownerInput.value.trim();
+            const apn = apnInput.value.trim();
 
-    messageDiv.innerHTML = '';
+            messageDiv.innerHTML = '';
 
-    if (!ownerName || !apn) {
-        showMessage('Please enter both owner name and APN', 'error');
-        return;
-    }
+            if (!ownerName || !apn) {
+                showMessage('Please enter both owner name and APN', 'error');
+                return;
+            }
 
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = '<div class="spinner"></div>';
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<div class="spinner"></div>';
 
-    try {
-        // Query Supabase for matching parcels
-        const { data, error } = await supabase
-            .from('parcels')
-            .select('*')
-            .eq('owner', ownerName)
-            .eq('formatted_apn', apn);
+            try {
+                // Query Supabase for matching parcels
+                const { data, error } = await supabase
+                    .from('parcels')
+                    .select('*')
+                    .eq('owner', ownerName)
+                    .eq('formatted_apn', apn);
 
-        if (error || !data || data.length === 0) {
-             const hint = `
-                <strong>No match found.</strong> Try:
-                <ul style="margin: 8px 0 0 18px; font-size: 12px; line-height: 1.5;">
-                    <li>Removing middle initials (e.g., "John Smith" not "John J Smith")</li>
-                    <li>Using your full legal name</li>
-                    <li>Checking if listed as a business or trust name</li>
-                </ul>
-                <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                    Still having trouble? <a href="mailto:info@yolosga.org" style="color: #667eea; text-decoration: none; font-weight: 600;">Contact us for help</a>
-                </div>
-            `;
-            showMessage(hint, 'error');
+                if (error || !data || data.length === 0) {
+                    const hint = `
+                        <strong>No match found.</strong> Try:
+                        <ul style="margin: 8px 0 0 18px; font-size: 12px; line-height: 1.5;">
+                            <li>Removing middle initials (e.g., "John Smith" not "John J Smith")</li>
+                            <li>Using your full legal name</li>
+                            <li>Checking if listed as a business or trust name</li>
+                        </ul>
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            Still having trouble? <a href="mailto:info@yolosga.org" style="color: #667eea; text-decoration: none; font-weight: 600;">Contact us for help</a>
+                        </div>
+                    `;
+                    showMessage(hint, 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = 'Access Your Information';
+                    return;
+                }
+
+                // Login successful
+                currentUser = { ownerName, apn };
+                userParcels = data;
+                displayData();
+
+            } catch (err) {
+                showMessage('Error connecting to database. Please try again.', 'error');
+                console.error(err);
+            }
+
             loginBtn.disabled = false;
             loginBtn.innerHTML = 'Access Your Information';
-            return;
         }
 
-        // Login successful
-        currentUser = { ownerName, apn };
-        userParcels = data;
-        displayData();
-
-    } catch (err) {
-        showMessage('Error connecting to database. Please try again.', 'error');
-        console.error(err);
-    }
-
-    loginBtn.disabled = false;
-    loginBtn.innerHTML = 'Access Your Information';
-}
         function displayData() {
             loginSection.style.display = 'none';
             dataSection.classList.add('active');
@@ -436,10 +436,10 @@ async function handleLogin() {
 
             parcelList.innerHTML = userParcels.map((parcel, idx) => `
                 <div class="parcel-card" onclick="selectParcel(${idx})">
-                    <div class="parcel-apn">${parcel.apn}</div>
-                    <div class="parcel-address">${parcel.address}</div>
+                    <div class="parcel-apn">${parcel.formatted_apn}</div>
+                    <div class="parcel-address">${parcel.address || 'N/A'}</div>
                     <div class="parcel-preview">
-                        ${parcel.developed_parcel} | ${parcel.water_system_type} | Total Fee: ${parcel.total_fee}
+                        ${parcel.developed_parcel || 'N/A'} | ${parcel.water_system_type || 'N/A'} | Total Fee: ${parcel.total_fee || 'N/A'}
                     </div>
                 </div>
             `).join('');
@@ -463,94 +463,94 @@ async function handleLogin() {
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">APN</div>
-                        <div class="detail-value">${parcel.apn}</div>
+                        <div class="detail-value">${parcel.formatted_apn || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Address</div>
-                        <div class="detail-value">${parcel.address}</div>
+                        <div class="detail-value">${parcel.address || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Developed Parcel</div>
-                        <div class="detail-value">${parcel.developed_parcel}</div>
+                        <div class="detail-value">${parcel.developed_parcel || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Water System Type</div>
-                        <div class="detail-value">${parcel.water_system_type}</div>
+                        <div class="detail-value">${parcel.water_system_type || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Fee AG Acres</div>
-                        <div class="detail-value">${parcel.fee_ag_acres}</div>
+                        <div class="detail-value">${parcel.fee_ag_acres || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Billing Fee</div>
-                        <div class="detail-value">${parcel.billing_fee}</div>
+                        <div class="detail-value">${parcel.billing_fee || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Acreage Fee</div>
-                        <div class="detail-value">${parcel.acreage_fee}</div>
+                        <div class="detail-value">${parcel.acreage_fee || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Total Tier 1</div>
-                        <div class="detail-value" style="color: #667eea; font-weight: 700;">${parcel.total_tier_1}</div>
+                        <div class="detail-value" style="color: #667eea; font-weight: 700;">${parcel.total_tier_1 || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Tier 2 Fee</div>
-                        <div class="detail-value">${parcel.tier_2_fee}</div>
+                        <div class="detail-value">${parcel.tier_2_fee || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">SWS Distracted</div>
-                        <div class="detail-value">${parcel.sws_distracted}</div>
+                        <div class="detail-value">${parcel.sws_distracted || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">SWS DWEs</div>
-                        <div class="detail-value">${parcel.sws_dwe}</div>
+                        <div class="detail-value">${parcel.sws_dwe || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Community DWEs</div>
-                        <div class="detail-value">${parcel.community_dwe}</div>
+                        <div class="detail-value">${parcel.community_dwe || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Non-Regulated DWEs</div>
-                        <div class="detail-value">${parcel.non_regulated_dwe}</div>
+                        <div class="detail-value">${parcel.non_regulated_dwe || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">Total DWEs</div>
-                        <div class="detail-value">${parcel.total_dwe}</div>
+                        <div class="detail-value">${parcel.total_dwe || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="detail-row">
                     <div>
                         <div class="detail-label">Tier 2 Billed</div>
-                        <div class="detail-value">${parcel.tier_2_billed}</div>
+                        <div class="detail-value">${parcel.tier_2_billed || 'N/A'}</div>
                     </div>
                     <div>
                         <div class="detail-label">DOM Fee</div>
-                        <div class="detail-value">${parcel.dom_fee}</div>
+                        <div class="detail-value">${parcel.dom_fee || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e0e0e0;">
                     <div class="detail-label">Total Fee</div>
-                    <div class="detail-value" style="font-size: 18px; color: #667eea; font-weight: 700;">${parcel.total_fee}</div>
+                    <div class="detail-value" style="font-size: 18px; color: #667eea; font-weight: 700;">${parcel.total_fee || 'N/A'}</div>
                 </div>
             `;
         }
