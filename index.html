@@ -398,7 +398,18 @@ async function handleLogin() {
             .eq('formatted_apn', apn);
 
         if (error || !data || data.length === 0) {
-            showMessage('No parcels found. Please check your name and APN.', 'error');
+             const hint = `
+                <strong>No match found.</strong> Try:
+                <ul style="margin: 8px 0 0 18px; font-size: 12px; line-height: 1.5;">
+                    <li>Removing middle initials (e.g., "John Smith" not "John J Smith")</li>
+                    <li>Using your full legal name</li>
+                    <li>Checking if listed as a business or trust name</li>
+                </ul>
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    Still having trouble? <a href="mailto:info@yolosga.org" style="color: #667eea; text-decoration: none; font-weight: 600;">Contact us for help</a>
+                </div>
+            `;
+            showMessage(hint, 'error');
             loginBtn.disabled = false;
             loginBtn.innerHTML = 'Access Your Information';
             return;
