@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcel Information Lookup</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            border-left: 4px solid #c33;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3c3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Data Display Styles */
+        .data-section {
+            display: none;
+        }
+
+        .data-section.active {
+            display: block;
+        }
+
+        .logout-btn {
+            background: #f5f5f5;
+            color: #667eea;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .parcel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .parcel-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .parcel-card:hover {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .parcel-card.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .parcel-apn {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .parcel-address {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .parcel-preview {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .parcel-details {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .parcel-details.active {
+            display: block;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .detail-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .welcome-text {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 0;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Parcel Information</h1>
+            <p>View your parcel details securely</p>
+        </div>
+
+        <div class="content">
+            <!-- Login Section -->
+            <div class="login-section">
+                <div id="message"></div>
+                
+                <div class="form-group">
+                    <label for="owner-name">Owner Name</label>
+                    <input 
+                        type="text" 
+                        id="owner-name" 
+                        placeholder="e.g., John Smith"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="apn">Assessor Parcel Number (APN)</label>
+                    <input 
+                        type="text" 
+                        id="apn" 
+                        placeholder="e.g., 123-456-789"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <button class="login-btn" id="login-btn">Access Your Information</button>
+            </div>
+
+            <!-- Data Section -->
+            <div class="data-section" id="data-section">
+                <button class="logout-btn" id="logout-btn">← Logout</button>
+                
+                <div class="welcome-text" id="welcome-text"></div>
+
+                <div class="parcel-list" id="parcel-list"></div>
+
+                <div class="parcel-details" id="parcel-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      
+// ===== SUPABASE CONFIGURATION =====
+const SUPABASE_URL = 'https://ofqrtpkpbdloigrfogfa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_u5I2lqipSLh866Vh_GnQ3g_V6vtKZHD';
+
+const { createClient } = window.supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let userParcels = [];
+
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const ownerInput = document.getElementById('owner-name');
+        const apnInput = document.getElementById('apn');
+        const messageDiv = document.getElementById('message');
+        const loginSection = document.querySelector('.login-section');
+        const dataSection = document.getElementById('data-section');
+        const parcelList = document.getElementById('parcel-list');
+        const parcelDetails = document.getElementById('parcel-details');
+        const welcomeText = document.getElementById('welcome-text');
+
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        ownerInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
+        apnInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
+
+async function handleLogin() {
+    const ownerName = ownerInput.value.trim();
+    const apn = apnInput.value.trim();
+
+    messageDiv.innerHTML = '';
+
+    if (!ownerName || !apn) {
+        showMessage('Please enter both owner name and APN', 'error');
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="spinner"></div>';
+
+    try {
+        // Query Supabase for matching parcels
+        const { data, error } = await supabase
+            .from('parcels')
+            .select('*')
+            .eq('owner', ownerName)
+            .eq('formatted_apn', apn);
+
+        if (error || !data || data.length === 0) {
+            showMessage('No parcels found. Please check your name and APN.', 'error');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'Access Your Information';
+            return;
+        }
+
+        // Login successful
+        currentUser = { ownerName, apn };
+        userParcels = data;
+        displayData();
+
+    } catch (err) {
+        showMessage('Error connecting to database. Please try again.', 'error');
+        console.error(err);
+    }
+
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = 'Access Your Information';
+}
+        function displayData() {
+            loginSection.style.display = 'none';
+            dataSection.classList.add('active');
+
+            welcomeText.innerHTML = `Welcome, <strong>${currentUser.ownerName}</strong>. Below is your parcel information.`;
+
+            parcelList.innerHTML = userParcels.map((parcel, idx) => `
+                <div class="parcel-card" onclick="selectParcel(${idx})">
+                    <div class="parcel-apn">${parcel.apn}</div>
+                    <div class="parcel-address">${parcel.address}</div>
+                    <div class="parcel-preview">
+                        ${parcel.developed_parcel} | ${parcel.water_system_type} | Total Fee: ${parcel.total_fee}
+                    </div>
+                </div>
+            `).join('');
+
+            if (userParcels.length > 0) {
+                selectParcel(0);
+            }
+        }
+
+        function selectParcel(idx) {
+            const parcel = userParcels[idx];
+            
+            document.querySelectorAll('.parcel-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === idx);
+            });
+
+            parcelDetails.classList.add('active');
+            parcelDetails.innerHTML = `
+                <h3 style="color: #333; margin-bottom: 16px; font-size: 16px;">Parcel Details</h3>
+                
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">APN</div>
+                        <div class="detail-value">${parcel.apn}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Address</div>
+                        <div class="detail-value">${parcel.address}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Developed Parcel</div>
+                        <div class="detail-value">${parcel.developed_parcel}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Water System Type</div>
+                        <div class="detail-value">${parcel.water_system_type}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Fee AG Acres</div>
+                        <div class="detail-value">${parcel.fee_ag_acres}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Billing Fee</div>
+                        <div class="detail-value">${parcel.billing_fee}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Acreage Fee</div>
+                        <div class="detail-value">${parcel.acreage_fee}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Total Tier 1</div>
+                        <div class="detail-value" style="color: #667eea; font-weight: 700;">${parcel.total_tier_1}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Tier 2 Fee</div>
+                        <div class="detail-value">${parcel.tier_2_fee}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">SWS Distracted</div>
+                        <div class="detail-value">${parcel.sws_distracted}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">SWS DWEs</div>
+                        <div class="detail-value">${parcel.sws_dwe}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Community DWEs</div>
+                        <div class="detail-value">${parcel.community_dwe}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Non-Regulated DWEs</div>
+                        <div class="detail-value">${parcel.non_regulated_dwe}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Total DWEs</div>
+                        <div class="detail-value">${parcel.total_dwe}</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div>
+                        <div class="detail-label">Tier 2 Billed</div>
+                        <div class="detail-value">${parcel.tier_2_billed}</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">DOM Fee</div>
+                        <div class="detail-value">${parcel.dom_fee}</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e0e0e0;">
+                    <div class="detail-label">Total Fee</div>
+                    <div class="detail-value" style="font-size: 18px; color: #667eea; font-weight: 700;">${parcel.total_fee}</div>
+                </div>
+            `;
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            userParcels = [];
+            dataSection.classList.remove('active');
+            loginSection.style.display = 'block';
+            ownerInput.value = '';
+            apnInput.value = '';
+            messageDiv.innerHTML = '';
+            parcelDetails.classList.remove('active');
+        }
+
+        function showMessage(text, type) {
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+        }
+    </script>
+</body>
+</html>
